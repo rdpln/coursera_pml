@@ -1,0 +1,51 @@
+---
+title: "Coursera Predictive Modeling Assignment"
+output: html_document
+---
+
+This very simple R code generated correct answers for 19 out of 20 of the test cases in the Submission portion of the assignment. 
+
+Before even opening RStudio, I took a look at the data in Excel. There were 159 possible predictors and over 15,000 rows of data. Some of predictors looked largely empty ("kurtosis_roll_belt", "max_roll_belt", etc) or irrelevent (ie, "new_window", "user_name", etc) to the classe. I did a test run where I tried to fit a model with all 159 predictors using a random forest. Of course, my computer quickly ran into memory managment errors. 
+
+Next I decided to scale things way back, and I fit a model using only three predictors ("magnet_forearm_x", "magnet_forearm_y", "magnet_forearm_z") and only 10% of the pml-training dataset. The model showed 60% accuracy (out-of-bag). I continued to add predictors until finally achieved 90% accuracy. I kept the training set to a small subset of the pml-training file - only 10% of the data - to keep things manageable for my poor computer. 
+
+Here is the final code, step by step. 
+
+First I loaded the caret package, and read the entire pml-training file into a dataframe.
+
+```{r eval=FALSE}
+library(caret)
+rawTrainingData <- read.csv("pml-training.csv")
+```
+
+Next I took a subset of the pml-training dataset that contained only the predictors with any valuable data.
+
+
+```{r eval=FALSE}
+usefulSubSet <- rawTrainingData[c(7:11,37:49,60:68,84:86,102,114:124,140,151:160)]
+```
+
+Next I created a training set (10% of the data), leaving the rest of it as a validation set.
+
+
+```{r eval=FALSE}
+inTrain <- createDataPartition(y=usefulSubSet$classe, p=0.10, list=FALSE)
+trainingSet <- usefulSubSet[inTrain,]
+validationSet <- usefulSubSet[-inTrain,]
+```
+
+Next I fit a random forest model using the train function from caret.
+
+```{r eval=FALSE}
+modFit <- train(classe~., data=trainingSet, method="rf", prox=TRUE)
+```
+
+Then I used this model to predict the classe variable on the validation set (the remaining 90% of the pml-training dataset) and output a table showing predicted classe variables against the actual classe variables in the validation set.
+
+
+```{r eval=FALSE}
+pred <- predict(modFit, validationSet)
+table(pred, validationSet$classe)
+```
+
+With satisfactory accuracy on the validation set (90%), I proceeded to use this model on the pml-testing data. I anticipated 90% accuracy on the pml-testing data (out-of-sample error to be 10%).  
